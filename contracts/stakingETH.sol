@@ -5,6 +5,7 @@ contract stakingEth {
    event EmergencyWithdraw(address indexed withdrawer, uint _amount);
    event WithdrawAll(address indexed withdrawer, uint _amount);
    event Staked( address indexed staker, uint _amount, uint durationinDays);
+    event WithdrawToOwner (address indexed owner, uint _amount);
     struct userDetails {
         uint256 amountStaked;
         // not in sec just normal Days 1 for a Days 2 for 2 Days and so on ..
@@ -103,8 +104,17 @@ contract stakingEth {
     function _calculateReward(uint256 _days) private view returns (uint256) {
        return (stakes[msg.sender].amountStaked*fixedAPY*_days) / 36500  ; //365 *100
     }
+// this function with only withdraw to owner 1 year after the staking duration as ended
+     function withdrawToOwner () external {
+        require(msg.sender == owner, "you are not owner");
+        uint256 oneYearafter = (1 days *365) + startStake + durationInDays * 1 days;
+        require(block.timestamp > oneYearafter, "it is not yet time to withdraw to you ");
+        
+        (bool success,) = owner.call{value : address(this).balance }("");
+        require(success,"something went wrong");
+        emit WithdrawToOwner(owner,address(this).balance );
 
-
+    }
     // return true if the staking period as not passed
     function _checkDuration() private view returns(bool passed){
         uint256 durationInsec = startStake + durationInDays * 1 days;
