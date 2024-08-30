@@ -4,7 +4,7 @@ pragma solidity 0.8.24;
 contract stakingEth {
    event EmergencyWithdraw(address indexed withdrawer, uint _amount);
    event WithdrawAll(address indexed withdrawer, uint _amount);
-   event Stakeaddress( address indexed staker, uint _amount, uint durationinDays);
+   event Staked( address indexed staker, uint _amount, uint durationinDays);
     struct userDetails {
         uint256 amountStaked;
         // not in sec just normal Days 1 for a Days 2 for 2 Days and so on ..
@@ -16,7 +16,7 @@ contract stakingEth {
     // mapping og user to there detaila
     mapping(address => userDetails) stakes;
     uint256 public totalAmountStaked;
-    // 
+    // ER
     uint8 public fixedAPY;
     address immutable owner;
     // how long the day season will last
@@ -24,6 +24,8 @@ contract stakingEth {
 
     // maximum amount of ethers that can be staking an account
     uint256 maxAmountStaked;
+    
+    uint256 startStake;
 
     constructor(
         //address _token,
@@ -35,6 +37,7 @@ contract stakingEth {
         fixedAPY = _fixedAPY;
         durationInDays = _durationInDays;
         maxAmountStaked =_maxAmountStaked;
+        startStake  = block.timestamp;
 
     }
 
@@ -50,13 +53,17 @@ contract stakingEth {
         return stakes[msg.sender].amountStaked;
     }
 
-// todo
+
     function stake(uint256 _days) external  payable  {
        require(msg.sender != address(0), "zero address detected");
        require(msg.value > 0 ," you have  send value");
        require(msg.value <= maxAmountStaked ," you have  send value");
-       // TODO mechenism for check if stake duration is over 
+      
+       require( _checkDuration(),"you can't stake again duration past");
+
          totalAmountStaked = totalAmountStaked +  msg.value;
+        stakes[msg.sender] = userDetails(msg.value,_days,block.timestamp,true);
+        emit Staked(msg.sender, msg.value, _days);
 
     }
 
@@ -75,6 +82,7 @@ contract stakingEth {
         (bool success,) = msg.sender.call{value : _amount}("");
         require(success,"something went wrong");
 
+        emit EmergencyWithdraw(msg.sender,_amount );
     }
 
     function withdraw() external {
@@ -88,10 +96,21 @@ contract stakingEth {
         totalAmountStaked = totalAmountStaked -  stakes[msg.sender].amountStaked;
         (bool success,) = msg.sender.call{value : amountToPay}("");
         require(success,"something went wrong");
+        emit WithdrawAll(msg.sender,amountToPay );
 
     }
 
     function _calculateReward(uint256 _days) private view returns (uint256) {
        return (stakes[msg.sender].amountStaked*fixedAPY*_days) / 36500  ; //365 *100
+    }
+
+
+    // return true if the staking period as not passed
+    function _checkDuration() private view returns(bool passed){
+        uint256 durationInsec = startStake + durationInDays * 1 days;
+        if (durationInsec <= block.timestamp){
+            return true;
+        }
+        return false;
     }
 }
