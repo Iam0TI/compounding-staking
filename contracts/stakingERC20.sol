@@ -110,16 +110,23 @@ contract StakingERC20 {
         // this also check that the user has so amount stake
         require(stakes[msg.sender].isvalid, "user cannot withdraw");
         require(block.timestamp >= stakes[msg.sender].registrationTimestamp + stakes[msg.sender].numberOfDays * 1 days,"chill can't withdraw yet");
+
         uint256 amountToPay = _calculateReward(stakes[msg.sender].numberOfDays) + stakes[msg.sender].amountStaked;
-        stakes[msg.sender].amountStaked = 0;
-        stakes[msg.sender].isvalid = false;
+
         totalAmountStaked = totalAmountStaked -  stakes[msg.sender].amountStaked;
+
+        stakes[msg.sender].amountStaked = 0;
+
+        stakes[msg.sender].isvalid = false;
+        
         tokenAddress.transfer(msg.sender, amountToPay);
+
         emit WithdrawAll(msg.sender,amountToPay );
 
     }
 
     function _calculateReward(uint256 _days) private view returns (uint256) {
+
        return (stakes[msg.sender].amountStaked*fixedAPY*_days) / 36500  ; //365 *100
     }
 
@@ -132,6 +139,8 @@ contract StakingERC20 {
         }
         return false;
     }
+
+    
 
     // this function with only withdraw to owner 1 year after the staking duration as ended
     function withdrawToOwner () external {
