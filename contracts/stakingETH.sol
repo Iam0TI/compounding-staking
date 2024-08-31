@@ -90,11 +90,17 @@ contract stakingEth {
         require(msg.sender != address(0), "zero address detected");
         // this also check that the user has so amount stake
         require(stakes[msg.sender].isvalid, "user cannot withdraw");
+
         require(block.timestamp >= stakes[msg.sender].registrationTimestamp + stakes[msg.sender].numberOfDays * 1 days,"chill can't withdraw yet");
-        uint256 amountToPay = _calculateReward(stakes[msg.sender].numberOfDays) + stakes[msg.sender].amountStaked;
-        stakes[msg.sender].amountStaked = 0;
+
+   uint256 amountToPay = _calculateReward(stakes[msg.sender].numberOfDays) + stakes[msg.sender].amountStaked;
+
+          totalAmountStaked = totalAmountStaked -  stakes[msg.sender].amountStaked;
+
+         stakes[msg.sender].amountStaked = 0;
+
         stakes[msg.sender].isvalid = false;
-        totalAmountStaked = totalAmountStaked -  stakes[msg.sender].amountStaked;
+      
         (bool success,) = msg.sender.call{value : amountToPay}("");
         require(success,"something went wrong");
         emit WithdrawAll(msg.sender,amountToPay );
